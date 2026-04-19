@@ -21,17 +21,21 @@ export default function JsonFormatter() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-800/90 px-3 py-2">
-        <span className="select-none text-xs tracking-wide text-zinc-400">JSON</span>
-        <JsonFormatterTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <div className="min-w-[1rem] flex-1" aria-hidden="true" />
-        <JsonFormatterToolbar
-          onFormat={handleFormat}
-          onMinify={handleMinify}
-          onCopy={handleCopy}
-          onClear={handleClear}
-        />
-        <JsonFormatterHeader status={status} />
+      <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-zinc-800/90 px-3 py-2">
+        <div className="flex min-w-0 justify-start">
+          <JsonFormatterTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+        <div className="flex justify-center">
+          <JsonFormatterToolbar
+            onFormat={handleFormat}
+            onMinify={handleMinify}
+            onCopy={handleCopy}
+            onClear={handleClear}
+          />
+        </div>
+        <div className="flex min-w-0 justify-end">
+          <JsonFormatterHeader status={status} />
+        </div>
       </div>
       <JsonFormatterWorkspace
         className="min-h-0 flex-1"

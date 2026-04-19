@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   TAB,
   STATUS_TYPE,
-  autoCloseBrackets,
-  roughFormatInvalidJson,
   minifyStripWhitespace,
+  roughFormatInvalidJson,
   newlineWithSmartIndent,
   insertTabAtSelection,
 } from '../../lib/json-formatter';
@@ -130,22 +129,10 @@ export function useJsonViewer() {
       const parsed = JSON.parse(input);
       pushCommit(JSON.stringify(parsed, null, 2));
       setStatus({ message: 'Formatted Successfully!', type: STATUS_TYPE.SUCCESS });
-      return;
     } catch {
-      // try auto-close brackets
+      pushCommit(roughFormatInvalidJson(input));
+      setStatus({ message: 'Rough format (invalid JSON)', type: STATUS_TYPE.ERROR });
     }
-
-    try {
-      const fixed = autoCloseBrackets(input);
-      pushCommit(JSON.stringify(JSON.parse(fixed), null, 2));
-      setStatus({ message: 'Auto-fixed & Formatted!', type: STATUS_TYPE.SUCCESS });
-      return;
-    } catch {
-      // rough visual format
-    }
-
-    pushCommit(roughFormatInvalidJson(input));
-    setStatus({ message: 'Rough Format (Invalid JSON)', type: STATUS_TYPE.ERROR });
   }, [jsonInput, pushCommit]);
 
   const handleMinify = useCallback(() => {

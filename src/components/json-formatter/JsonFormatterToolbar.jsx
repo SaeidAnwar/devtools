@@ -13,7 +13,7 @@ export default function JsonFormatterToolbar({
         Format
       </button>
       <button type="button" onClick={onMinify} className={actionBtn}>
-        Minify
+        Remove White Space
       </button>
       <button type="button" onClick={onCopy} className={actionBtn}>
         Copy

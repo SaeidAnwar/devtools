@@ -1,7 +1,7 @@
 import { TAB } from '../../lib/json-formatter';
 
 const btn = (active) =>
-  `rounded px-2 py-1 text-xs transition-colors ${
+  `rounded px-2 py-1 text-sm transition-colors ${
     active
       ? 'bg-zinc-800 text-zinc-300'
       : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-400'
