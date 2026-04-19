@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   TAB,
   STATUS_TYPE,
@@ -9,7 +9,6 @@ import {
 } from '../../lib/json-formatter';
 
 const emptyStatus = { message: '', type: STATUS_TYPE.NONE };
-const MAX_HISTORY = 100;
 
 function useParsedJson(jsonInput) {
   const [parsedData, setParsedData] = useState(null);
@@ -32,24 +31,6 @@ export function useJsonViewer() {
   const [status, setStatus] = useState(emptyStatus);
   const parsedData = useParsedJson(jsonInput);
 
-  const historyRef = useRef(['']);
-  const historyIndexRef = useRef(0);
-
-  const pushCommit = useCallback((nextValue) => {
-    const h = historyRef.current;
-    let idx = historyIndexRef.current;
-    if (nextValue === h[idx]) return;
-    h.splice(idx + 1);
-    h.push(nextValue);
-    idx = h.length - 1;
-    while (h.length > MAX_HISTORY) {
-      h.shift();
-      idx = Math.max(0, idx - 1);
-    }
-    historyIndexRef.current = idx;
-    setJsonInput(nextValue);
-  }, []);
-
   const flashStatus = useCallback((message, type, clearAfterMs = 2000) => {
     setStatus({ message, type });
     if (clearAfterMs > 0) {
@@ -62,47 +43,12 @@ export function useJsonViewer() {
       const el = e.target;
       if (!(el instanceof HTMLTextAreaElement)) return;
 
-      const mod = e.metaKey || e.ctrlKey;
-      const key = e.key.toLowerCase();
-
-      if (mod && key === 'z') {
-        const h = historyRef.current;
-        let idx = historyIndexRef.current;
-
-        if (e.shiftKey) {
-          if (idx >= h.length - 1) return;
-          e.preventDefault();
-          idx += 1;
-          historyIndexRef.current = idx;
-          setJsonInput(h[idx]);
-          return;
-        }
-
-        if (idx <= 0) return;
-        e.preventDefault();
-        idx -= 1;
-        historyIndexRef.current = idx;
-        setJsonInput(h[idx]);
-        return;
-      }
-
-      if (mod && key === 'y') {
-        const h = historyRef.current;
-        let idx = historyIndexRef.current;
-        if (idx >= h.length - 1) return;
-        e.preventDefault();
-        idx += 1;
-        historyIndexRef.current = idx;
-        setJsonInput(h[idx]);
-        return;
-      }
-
       const { selectionStart, selectionEnd, value } = el;
 
       if (e.key === 'Enter') {
         e.preventDefault();
         const { nextValue, nextCursor } = newlineWithSmartIndent(value, selectionStart, selectionEnd);
-        pushCommit(nextValue);
+        setJsonInput(nextValue);
         setTimeout(() => {
           el.selectionStart = el.selectionEnd = nextCursor;
         }, 0);
@@ -112,40 +58,51 @@ export function useJsonViewer() {
       if (e.key === 'Tab') {
         e.preventDefault();
         const { nextValue, nextCursor } = insertTabAtSelection(value, selectionStart, selectionEnd);
-        pushCommit(nextValue);
+        setJsonInput(nextValue);
         setTimeout(() => {
           el.selectionStart = el.selectionEnd = nextCursor;
         }, 0);
       }
     },
-    [pushCommit],
+    [setJsonInput],
   );
 
   const handleFormat = useCallback(() => {
-    const input = jsonInput.trim();
+    let input = jsonInput.trim();
     if (!input) return;
-
     try {
       const parsed = JSON.parse(input);
-      pushCommit(JSON.stringify(parsed, null, 2));
+      setJsonInput(JSON.stringify(parsed, null, 2));
       setStatus({ message: 'Formatted Successfully!', type: STATUS_TYPE.SUCCESS });
     } catch {
-      pushCommit(roughFormatInvalidJson(input));
-      setStatus({ message: 'Rough format (invalid JSON)', type: STATUS_TYPE.ERROR });
+      try {
+        let fixed = input;
+        const oB = (input.match(/\{/g) || []).length;
+        const cB = (input.match(/\}/g) || []).length;
+        const oSq = (input.match(/\[/g) || []).length;
+        const cSq = (input.match(/\]/g) || []).length;
+        if (oB > cB) fixed += '}'.repeat(oB - cB);
+        if (oSq > cSq) fixed += ']'.repeat(oSq - cSq);
+        setJsonInput(JSON.stringify(JSON.parse(fixed), null, 2));
+        setStatus({ message: 'Auto-fixed & Formatted!', type: STATUS_TYPE.SUCCESS });
+      } catch {
+        setJsonInput(roughFormatInvalidJson(input));
+        setStatus({ message: 'Rough Format (Invalid JSON)', type: STATUS_TYPE.ERROR });
+      }
     }
-  }, [jsonInput, pushCommit]);
+  }, [jsonInput, setJsonInput]);
 
   const handleMinify = useCallback(() => {
     if (!jsonInput.trim()) return;
 
     try {
-      pushCommit(JSON.stringify(JSON.parse(jsonInput)));
+      setJsonInput(JSON.stringify(JSON.parse(jsonInput)));
       setStatus({ message: 'Minified!', type: STATUS_TYPE.SUCCESS });
     } catch {
-      pushCommit(minifyStripWhitespace(jsonInput));
+      setJsonInput(minifyStripWhitespace(jsonInput));
       setStatus({ message: 'Minified (Still Invalid)', type: STATUS_TYPE.ERROR });
     }
-  }, [jsonInput, pushCommit]);
+  }, [jsonInput, setJsonInput]);
 
   const handleCopy = useCallback(() => {
     if (!jsonInput) return;
@@ -154,13 +111,13 @@ export function useJsonViewer() {
   }, [jsonInput, flashStatus]);
 
   const handleClear = useCallback(() => {
-    pushCommit('');
+    setJsonInput('');
     flashStatus('Cleared', STATUS_TYPE.SUCCESS);
-  }, [pushCommit, flashStatus]);
+  }, [setJsonInput, flashStatus]);
 
   return {
     jsonInput,
-    setJsonInput: pushCommit,
+    setJsonInput,
     activeTab,
     setActiveTab,
     status,
