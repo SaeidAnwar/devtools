@@ -8,7 +8,7 @@ function App() {
   const [activeTool, setActiveTool] = useState('json');
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col">
+    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-x-hidden">
       <AppNavbar activeTool={activeTool} onToolChange={setActiveTool} />
       <div className="relative min-h-0 flex-1">
         <div

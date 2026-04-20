@@ -26,8 +26,8 @@ export default function Base64Tool() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">
-      <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-zinc-800/90 px-3 py-2">
-        <div className="min-w-0" aria-hidden="true" />
+      <div className="grid shrink-0 grid-cols-1 gap-2 border-b border-zinc-800/90 px-2 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-3">
+        <div className="hidden min-w-0 sm:block" aria-hidden="true" />
         <div className="flex flex-wrap items-center justify-center gap-1.5">
           <button type="button" className={actionBtn} onClick={handleEncode}>
             Encode
@@ -50,8 +50,8 @@ export default function Base64Tool() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 divide-x divide-zinc-800">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-zinc-800 md:flex-row md:divide-x md:divide-y-0">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col md:min-h-0">
           <div className={labelCls}>Decoded (UTF-8)</div>
           <textarea
             className={editorShell}
