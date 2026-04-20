@@ -69,11 +69,15 @@ export function useBase64Split() {
     setTimeout(() => setStatus(emptyStatus), 2000);
   }, [base64Text]);
 
-  const handleClear = useCallback(() => {
+  const handleClearPlain = useCallback(() => {
     setPlainText('');
+    clearStatus();
+  }, [clearStatus]);
+
+  const handleClearBase64 = useCallback(() => {
     setBase64Text('');
-    setStatus(emptyStatus);
-  }, []);
+    clearStatus();
+  }, [clearStatus]);
 
   return {
     plainText,
@@ -85,6 +89,7 @@ export function useBase64Split() {
     handleDecode,
     handleCopyPlain,
     handleCopyBase64,
-    handleClear,
+    handleClearPlain,
+    handleClearBase64,
   };
 }

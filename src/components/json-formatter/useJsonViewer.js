@@ -5,8 +5,8 @@ import {
   minifyStripWhitespace,
   roughFormatInvalidJson,
   newlineWithSmartIndent,
-  insertTabAtSelection,
 } from '../../lib/json-formatter';
+import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
 
 const emptyStatus = { message: '', type: STATUS_TYPE.NONE };
 
@@ -56,12 +56,7 @@ export function useJsonViewer() {
       }
 
       if (e.key === 'Tab') {
-        e.preventDefault();
-        const { nextValue, nextCursor } = insertTabAtSelection(value, selectionStart, selectionEnd);
-        setJsonInput(nextValue);
-        setTimeout(() => {
-          el.selectionStart = el.selectionEnd = nextCursor;
-        }, 0);
+        handleTextareaTabKeyDown(e, setJsonInput);
       }
     },
     [setJsonInput],

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AppNavbar from './components/AppNavbar';
 import Base64Tool from './components/base64-tool';
 import JsonFormatter from './components/json-formatter';
+import JwtTool from './components/jwt-tool';
 import './App.css';
 
 function App() {
@@ -22,6 +23,12 @@ function App() {
           aria-hidden={activeTool !== 'base64'}
         >
           <Base64Tool />
+        </div>
+        <div
+          className={activeTool === 'jwt' ? 'flex h-full min-h-0 min-w-0 flex-col' : 'hidden'}
+          aria-hidden={activeTool !== 'jwt'}
+        >
+          <JwtTool />
         </div>
       </div>
     </div>
