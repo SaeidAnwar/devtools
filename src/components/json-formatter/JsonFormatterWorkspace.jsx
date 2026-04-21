@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import EditorFieldBar from '../EditorFieldBar';
+import FieldCopyClear from '../FieldCopyClear';
 import JsonNode from '../JsonNode';
 import { TAB, findEnclosingJsonRange } from '../../lib/json-formatter';
 
@@ -12,6 +14,8 @@ export default function JsonFormatterWorkspace({
   onJsonChange,
   onKeyDown,
   parsedData,
+  onFieldCopy,
+  onFieldClear,
 }) {
   const taRef = useRef(null);
   const mirrorRef = useRef(null);
@@ -59,7 +63,18 @@ export default function JsonFormatterWorkspace({
   return (
     <div className={`relative flex min-h-0 flex-col bg-zinc-950 ${className}`}>
       {activeTab === TAB.TEXT ? (
-        <div className="relative grid min-h-0 flex-1 grid-cols-1 grid-rows-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <EditorFieldBar
+            title="JSON"
+            right={
+              <FieldCopyClear
+                onCopy={onFieldCopy}
+                onClear={onFieldClear}
+                copyDisabled={!jsonInput}
+              />
+            }
+          />
+          <div className="relative grid min-h-0 flex-1 grid-cols-1 grid-rows-1">
           <pre
             ref={mirrorRef}
             className={`${editorShell} col-start-1 row-start-1 pointer-events-none border border-transparent`}
@@ -88,6 +103,7 @@ export default function JsonFormatterWorkspace({
             onKeyUp={syncCaret}
             onScroll={onScroll}
           />
+        </div>
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm">

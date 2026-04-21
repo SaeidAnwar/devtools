@@ -1,6 +1,7 @@
 const TOOLS = [
   { id: 'json', label: 'JSON' },
   { id: 'base64', label: 'Base64' },
+  { id: 'jwt', label: 'JWT' },
 ];
 
 const navBtn = (active) =>

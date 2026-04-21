@@ -26,12 +26,7 @@ export default function JsonFormatter() {
           <JsonFormatterTabs activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
         <div className="flex flex-wrap justify-center">
-          <JsonFormatterToolbar
-            onFormat={handleFormat}
-            onMinify={handleMinify}
-            onCopy={handleCopy}
-            onClear={handleClear}
-          />
+          <JsonFormatterToolbar onFormat={handleFormat} onMinify={handleMinify} />
         </div>
         <div className="flex min-w-0 justify-end">
           <JsonFormatterHeader status={status} />
@@ -44,6 +39,8 @@ export default function JsonFormatter() {
         onJsonChange={setJsonInput}
         onKeyDown={handleKeyDown}
         parsedData={parsedData}
+        onFieldCopy={handleCopy}
+        onFieldClear={handleClear}
       />
     </div>
   );

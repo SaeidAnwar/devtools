@@ -1,8 +1,8 @@
+import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
+import EditorFieldBar from '../EditorFieldBar';
+import FieldCopyClear from '../FieldCopyClear';
 import JsonFormatterHeader from '../json-formatter/JsonFormatterHeader';
 import { useBase64Split } from './useBase64Split';
-
-const labelCls =
-  'shrink-0 select-none px-3 pt-2 text-[10px] font-medium uppercase tracking-wider text-zinc-600';
 
 const editorShell =
   'min-h-0 w-full flex-1 resize-none overflow-auto border-0 bg-transparent p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words text-zinc-300 placeholder:text-zinc-600 focus:outline-none';
@@ -21,7 +21,8 @@ export default function Base64Tool() {
     handleDecode,
     handleCopyPlain,
     handleCopyBase64,
-    handleClear,
+    handleClearPlain,
+    handleClearBase64,
   } = useBase64Split();
 
   return (
@@ -35,15 +36,6 @@ export default function Base64Tool() {
           <button type="button" className={actionBtn} onClick={handleDecode}>
             Decode
           </button>
-          <button type="button" className={actionBtn} onClick={handleCopyPlain}>
-            Copy decoded
-          </button>
-          <button type="button" className={actionBtn} onClick={handleCopyBase64}>
-            Copy Base64
-          </button>
-          <button type="button" className={actionBtn} onClick={handleClear}>
-            Clear
-          </button>
         </div>
         <div className="flex min-w-0 justify-end">
           <JsonFormatterHeader status={status} />
@@ -52,23 +44,43 @@ export default function Base64Tool() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-zinc-800 md:flex-row md:divide-x md:divide-y-0">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col md:min-h-0">
-          <div className={labelCls}>Decoded (UTF-8)</div>
+          <EditorFieldBar
+            title="Decoded (UTF-8)"
+            right={
+              <FieldCopyClear
+                onCopy={handleCopyPlain}
+                onClear={handleClearPlain}
+                copyDisabled={!plainText}
+              />
+            }
+          />
           <textarea
             className={editorShell}
             spellCheck={false}
             placeholder="Plain text… use Encode to fill Base64."
             value={plainText}
             onChange={(e) => handlePlainChange(e.target.value)}
+            onKeyDown={(e) => handleTextareaTabKeyDown(e, handlePlainChange)}
           />
         </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className={labelCls}>Base64 (encoded)</div>
+          <EditorFieldBar
+            title="Base64 (encoded)"
+            right={
+              <FieldCopyClear
+                onCopy={handleCopyBase64}
+                onClear={handleClearBase64}
+                copyDisabled={!base64Text}
+              />
+            }
+          />
           <textarea
             className={editorShell}
             spellCheck={false}
             placeholder="Base64… use Decode to fill plain text."
             value={base64Text}
             onChange={(e) => handleBase64Change(e.target.value)}
+            onKeyDown={(e) => handleTextareaTabKeyDown(e, handleBase64Change)}
           />
         </div>
       </div>
