@@ -56,8 +56,8 @@ const handleCompare = () => {
       {diffResult.map((line, lineIndex) => {
         const lineTint = line.hasChange
           ? isNew
-            ? 'bg-emerald-500/5 rounded-r'
-            : 'bg-red-500/5 rounded-r'
+            ? 'bg-emerald-500/5'
+            : 'bg-red-500/5'
           : '';
 
         return (
@@ -79,7 +79,7 @@ const handleCompare = () => {
               return (
                 <span
                   key={i}
-                  className={`${highlightStyle} px-0.5 rounded-sm`}
+                  className={`${highlightStyle} px-0.5`}
                 >
                   {part.value}
                 </span>
