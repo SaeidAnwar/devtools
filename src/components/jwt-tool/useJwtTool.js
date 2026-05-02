@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { STATUS_TYPE } from '../../lib/json-formatter/constants';
 import { decodeJwt, encodeJwtHs } from '../../lib/jwt/jwtCodec';
 import { kvRowsToObject, objectToKvRows } from './jwtPayloadKv';
+import { useLocalStorage } from '../../lib/useLocalStorage';
 
 const DEFAULT_HEADER = `{
   "alg": "HS256",
@@ -18,17 +19,24 @@ async function copyText(text) {
 
 export function useJwtTool() {
   const rowIdRef = useRef(0);
+  const [kvRows, setKvRows] = useLocalStorage('jwt-tool-kv-rows', [{ id: 'kv-0', key: '', value: '' }]);
+
+  const highestRowId = kvRows.reduce((maxId, row) => {
+    const idNumber = Number(row.id.replace(/^kv-/, ''));
+    return Number.isFinite(idNumber) ? Math.max(maxId, idNumber) : maxId;
+  }, -1);
+  rowIdRef.current = highestRowId + 1;
+
   const makeRowId = useCallback(() => {
     rowIdRef.current += 1;
     return `kv-${rowIdRef.current}`;
   }, []);
 
-  const [headerText, setHeaderText] = useState(DEFAULT_HEADER);
-  const [payloadText, setPayloadText] = useState('{}');
-  const [payloadEditMode, setPayloadEditMode] = useState(PAYLOAD_MODE.JSON);
-  const [kvRows, setKvRows] = useState(() => [{ id: 'kv-0', key: '', value: '' }]);
-  const [secret, setSecret] = useState('');
-  const [jwtText, setJwtText] = useState('');
+  const [headerText, setHeaderText] = useLocalStorage('jwt-tool-header-text', DEFAULT_HEADER);
+  const [payloadText, setPayloadText] = useLocalStorage('jwt-tool-payload-text', '{}');
+  const [payloadEditMode, setPayloadEditMode] = useLocalStorage('jwt-tool-payload-edit-mode', PAYLOAD_MODE.JSON);
+  const [secret, setSecret] = useLocalStorage('jwt-tool-secret', '');
+  const [jwtText, setJwtText] = useLocalStorage('jwt-tool-jwt-text', '');
   const [status, setStatus] = useState(emptyStatus);
 
   const clearStatus = useCallback(() => setStatus(emptyStatus), []);

@@ -7,6 +7,7 @@ import {
   newlineWithSmartIndent,
 } from '../../lib/json-formatter';
 import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
+import { useLocalStorage } from '../../lib/useLocalStorage';
 
 const emptyStatus = { message: '', type: STATUS_TYPE.NONE };
 
@@ -26,8 +27,8 @@ function useParsedJson(jsonInput) {
 }
 
 export function useJsonViewer() {
-  const [jsonInput, setJsonInput] = useState('');
-  const [activeTab, setActiveTab] = useState(TAB.TEXT);
+  const [jsonInput, setJsonInput] = useLocalStorage('json-formatter-input', '');
+  const [activeTab, setActiveTab] = useLocalStorage('json-formatter-active-tab', TAB.TEXT);
   const [status, setStatus] = useState(emptyStatus);
   const parsedData = useParsedJson(jsonInput);
 
