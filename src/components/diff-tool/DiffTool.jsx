@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import * as Diff from 'diff';
 import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
 import { useLocalStorage } from '../../lib/useLocalStorage';
 import EditorFieldBar from '../EditorFieldBar';
 import FieldCopyClear from '../FieldCopyClear';
+import JsonFormatterHeader from '../json-formatter/JsonFormatterHeader';
 import { useDiffTool } from './useDiffTool';
 
 const editorShell =
@@ -19,12 +20,19 @@ export default function DiffTool() {
     oldText,
     newText,
     diffResult,
+    status,
     setOldText,
     setNewText,
     handleCompare,
     handleClearAll,
     clearDiff,
+    flashStatus,
+    clearStatus,
+    flashSuccess,
+    setErr,
   } = useDiffTool();
+
+
 
   const formattedOriginalJson = useMemo(() => {
     try {
@@ -46,8 +54,43 @@ export default function DiffTool() {
     <div className="min-h-full text-zinc-300 whitespace-pre-wrap">{content}</div>
   );
 
+  const renderJsonInvalidMessage = () => null;
+
+  const renderWordDiff = (oldLine, newLine, type) => {
+    const wordDiff = Diff.diffWordsWithSpace(oldLine, newLine);
+    return wordDiff.map((word, i) => {
+      if (type === 'removed') {
+        if (word.added) return null;
+        const removedClass = word.removed ? 'text-rose-400' : 'text-zinc-300';
+        return (
+          <span key={i} className={`${removedClass} px-0.5`}>
+            {word.value}
+          </span>
+        );
+      }
+
+      if (type === 'added') {
+        if (word.removed) return null;
+        const addedClass = word.added ? 'text-emerald-400' : 'text-zinc-300';
+        return (
+          <span key={i} className={`${addedClass} px-0.5`}>
+            {word.value}
+          </span>
+        );
+      }
+
+      return (
+        <span key={i} className="text-zinc-300 px-0.5">
+          {word.value}
+        </span>
+      );
+    });
+  };
+
   const renderTwoSideRows = (lines) => {
     const rows = [];
+    let leftLineNumber = 0;
+    let rightLineNumber = 0;
 
     const addRow = (left, right, key) => {
       rows.push({ left, right, key });
@@ -58,14 +101,27 @@ export default function DiffTool() {
       const nextPart = lines[index + 1];
 
       if (part.removed && nextPart?.added) {
-        const oldLines = part.value.split('\n');
-        const newLines = nextPart.value.split('\n');
+        let oldLines = part.value.split('\n');
+        if (oldLines[oldLines.length - 1] === '') oldLines.pop();
+        let newLines = nextPart.value.split('\n');
+        if (newLines[newLines.length - 1] === '') newLines.pop();
         const maxLen = Math.max(oldLines.length, newLines.length);
 
         for (let lineIndex = 0; lineIndex < maxLen; lineIndex += 1) {
+          const leftLine = oldLines[lineIndex];
+          const rightLine = newLines[lineIndex];
+
           addRow(
-            { type: 'removed', value: oldLines[lineIndex] ?? '' },
-            { type: 'added', value: newLines[lineIndex] ?? '' },
+            {
+              type: leftLine !== undefined ? 'removed' : 'empty',
+              value: leftLine ?? '',
+              number: leftLine !== undefined ? ++leftLineNumber : null,
+            },
+            {
+              type: rightLine !== undefined ? 'added' : 'empty',
+              value: rightLine ?? '',
+              number: rightLine !== undefined ? ++rightLineNumber : null,
+            },
             `paired-${index}-${lineIndex}`,
           );
         }
@@ -75,44 +131,238 @@ export default function DiffTool() {
       }
 
       if (part.removed) {
-        part.value.split('\n').forEach((line, lineIndex) => {
-          if (lineIndex === part.value.split('\n').length - 1 && line === '') return;
-          addRow({ type: 'removed', value: line }, { type: 'empty', value: '' }, `removed-${index}-${lineIndex}`);
+        const oldLines = part.value.split('\n');
+        oldLines.forEach((line, lineIndex) => {
+          if (lineIndex === oldLines.length - 1 && line === '') return;
+          addRow(
+            { type: 'removed', value: line, number: ++leftLineNumber },
+            { type: 'empty', value: '', number: null },
+            `removed-${index}-${lineIndex}`,
+          );
         });
         continue;
       }
 
       if (part.added) {
-        part.value.split('\n').forEach((line, lineIndex) => {
-          if (lineIndex === part.value.split('\n').length - 1 && line === '') return;
-          addRow({ type: 'empty', value: '' }, { type: 'added', value: line }, `added-${index}-${lineIndex}`);
+        const newLines = part.value.split('\n');
+        newLines.forEach((line, lineIndex) => {
+          if (lineIndex === newLines.length - 1 && line === '') return;
+          addRow(
+            { type: 'empty', value: '', number: null },
+            { type: 'added', value: line, number: ++rightLineNumber },
+            `added-${index}-${lineIndex}`,
+          );
         });
         continue;
       }
 
-      part.value.split('\n').forEach((line, lineIndex) => {
-        if (lineIndex === part.value.split('\n').length - 1 && line === '') return;
-        addRow({ type: 'common', value: line }, { type: 'common', value: line }, `common-${index}-${lineIndex}`);
+      const commonLines = part.value.split('\n');
+      commonLines.forEach((line, lineIndex) => {
+        if (lineIndex === commonLines.length - 1 && line === '') return;
+        addRow(
+          { type: 'common', value: line, number: ++leftLineNumber },
+          { type: 'common', value: line, number: ++rightLineNumber },
+          `common-${index}-${lineIndex}`,
+        );
       });
     }
 
     return rows;
   };
 
-  const renderLineBlock = (prefix, className, content, key) => (
+  const renderLineBlock = (prefix, className, content, key, lineNumber = null) => (
     <div key={key} className={`flex items-start gap-2 ${className}`}>
-      <span className="inline-flex w-5 shrink-0 text-xs font-semibold leading-5 text-zinc-400">
-        {prefix}
-      </span>
+      {lineNumber !== null && (
+        <span className="inline-flex w-8 shrink-0 text-right text-xs font-semibold leading-5 text-zinc-500">
+          {lineNumber}
+        </span>
+      )}
+      {prefix !== '' && (
+        <span className="inline-flex w-12 shrink-0 text-right text-xs font-semibold leading-5 text-zinc-500">
+          {prefix}
+        </span>
+      )}
       <span className="flex-1 whitespace-pre-wrap text-sm">
         {content}
       </span>
     </div>
   );
 
+
+
+  const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
+
+  const formatJsonValue = (value) => {
+    if (typeof value === 'string') return `"${value}"`;
+    if (value === null) return 'null';
+    return JSON.stringify(value);
+  };
+
+  const renderJsonDiff = (oldValue, newValue, baseLevel = 0) => {
+    const rows = [];
+
+    const renderLine = (content, level, className = 'text-zinc-300') => {
+      const indentStr = '  '.repeat(level);
+      return (
+        <div key={`${level}-${rows.length}`} className="flex whitespace-pre">
+          <span>{indentStr}</span>
+          <span className={className}>{content}</span>
+        </div>
+      );
+    };
+
+    const renderObjectInner = (oldObj = {}, newObj = {}, level) => {
+      const keys = [];
+      Object.keys(oldObj).forEach((key) => { if (!keys.includes(key)) keys.push(key); });
+      Object.keys(newObj).forEach((key) => { if (!keys.includes(key)) keys.push(key); });
+
+      keys.forEach((key, index) => {
+        const oldHas = Object.prototype.hasOwnProperty.call(oldObj, key);
+        const newHas = Object.prototype.hasOwnProperty.call(newObj, key);
+        const oldVal = oldObj[key];
+        const newVal = newObj[key];
+        const comma = index === keys.length - 1 ? '' : ',';
+
+        if (oldHas && !newHas) {
+          rows.push(renderLine(`"${key}": ${formatJsonValue(oldVal)}${comma}`, level, 'text-rose-400'));
+          return;
+        }
+
+        if (!oldHas && newHas) {
+          rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level, 'text-emerald-400'));
+          return;
+        }
+
+        if (isObject(oldVal) && isObject(newVal)) {
+          if (JSON.stringify(oldVal) === JSON.stringify(newVal)) {
+            rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level));
+            return;
+          }
+          rows.push(renderLine(`"${key}": {`, level));
+          renderObjectInner(oldVal, newVal, level + 1);
+          rows.push(renderLine(`}${comma}`, level));
+          return;
+        }
+
+        if (Array.isArray(oldVal) && Array.isArray(newVal)) {
+          if (JSON.stringify(oldVal) === JSON.stringify(newVal)) {
+            rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level));
+            return;
+          }
+          rows.push(renderLine(`"${key}": [`, level));
+          renderArrayInner(oldVal, newVal, level + 1);
+          rows.push(renderLine(`]${comma}`, level));
+          return;
+        }
+
+        if (oldVal === newVal) {
+          rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level));
+          return;
+        }
+
+        rows.push(
+          renderLine(
+            <>
+              <span className="text-zinc-300">"{key}": </span>
+              <span className="text-rose-400">{formatJsonValue(oldVal)}</span>
+              <span className="text-zinc-300"> =&gt; </span>
+              <span className="text-emerald-400">{formatJsonValue(newVal)}</span>
+              <span className="text-zinc-300">{comma}</span>
+            </>,
+            level
+          ),
+        );
+      });
+    };
+
+    const renderArrayInner = (oldArr = [], newArr = [], level) => {
+      const maxLength = Math.max(oldArr.length, newArr.length);
+
+      for (let idx = 0; idx < maxLength; idx += 1) {
+        const oldItem = oldArr[idx];
+        const newItem = newArr[idx];
+        const comma = idx === maxLength - 1 ? '' : ',';
+
+        if (idx >= oldArr.length) {
+          rows.push(renderLine(`${formatJsonValue(newItem)}${comma}`, level, 'text-emerald-400'));
+          continue;
+        }
+
+        if (idx >= newArr.length) {
+          rows.push(renderLine(`${formatJsonValue(oldItem)}${comma}`, level, 'text-rose-400'));
+          continue;
+        }
+
+        if (JSON.stringify(oldItem) === JSON.stringify(newItem)) {
+          rows.push(renderLine(`${formatJsonValue(newItem)}${comma}`, level));
+          continue;
+        }
+
+        if (isObject(oldItem) && isObject(newItem)) {
+          rows.push(renderLine('{', level));
+          renderObjectInner(oldItem, newItem, level + 1);
+          rows.push(renderLine(`}${comma}`, level));
+          continue;
+        }
+
+        if (Array.isArray(oldItem) && Array.isArray(newItem)) {
+          rows.push(renderLine('[', level));
+          renderArrayInner(oldItem, newItem, level + 1);
+          rows.push(renderLine(`]${comma}`, level));
+          continue;
+        }
+
+        rows.push(
+          renderLine(
+            <>
+              <span className="text-rose-400">{formatJsonValue(oldItem)}</span>
+              <span className="text-zinc-300"> =&gt; </span>
+              <span className="text-emerald-400">{formatJsonValue(newItem)}</span>
+              <span className="text-zinc-300">{comma}</span>
+            </>,
+            level
+          ),
+        );
+      }
+    };
+
+    if (isObject(oldValue) && isObject(newValue)) {
+      rows.push(renderLine('{', baseLevel));
+      renderObjectInner(oldValue, newValue, baseLevel + 1);
+      rows.push(renderLine('}', baseLevel));
+    } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+      rows.push(renderLine('[', baseLevel));
+      renderArrayInner(oldValue, newValue, baseLevel + 1);
+      rows.push(renderLine(']', baseLevel));
+    } else if (oldValue === newValue) {
+      rows.push(renderLine(formatJsonValue(newValue), baseLevel));
+    } else {
+      rows.push(
+        renderLine(
+          <>
+            <span className="text-rose-400">{formatJsonValue(oldValue)}</span>
+            <span className="text-zinc-300"> =&gt; </span>
+            <span className="text-emerald-400">{formatJsonValue(newValue)}</span>
+          </>,
+          baseLevel
+        ),
+      );
+    }
+
+    return rows;
+  };
+
   const renderOriginalContent = () => {
     if (diffMode === 'json') {
-      return renderPlainTextContent(formattedOriginalJson ?? oldText);
+      if (formattedOriginalJson === null || formattedNewJson === null) {
+        return renderJsonInvalidMessage();
+      }
+
+      if (!diffResult) {
+        return renderPlainTextContent(formattedOriginalJson ?? oldText);
+      }
+
+      return renderPlainTextContent(formattedOriginalJson);
     }
 
     if (!diffResult) return null;
@@ -123,30 +373,48 @@ export default function DiffTool() {
         <div className="min-h-full">
           {rows.map((row) => {
             if (row.left.type === 'empty') {
-              return renderLineBlock(' ', '', <span className="text-zinc-600">&nbsp;</span>, `${row.key}-left`);
+              return renderLineBlock(
+                '',
+                'text-zinc-600',
+                <span>&nbsp;</span>,
+                `${row.key}-left`,
+                row.left.number,
+              );
+            }
+
+            if (row.left.type === 'removed' && row.right?.type === 'added' && row.left.value && row.right.value) {
+              return renderLineBlock(
+                '',
+                'bg-rose-500/10',
+                <span>{renderWordDiff(row.left.value, row.right.value, 'removed')}</span>,
+                `${row.key}-left`,
+                row.left.number,
+              );
             }
 
             if (row.left.type === 'removed') {
               return renderLineBlock(
-                '-',
-                'rounded px-1 py-0.5 bg-rose-400/10 text-rose-200 border-b border-rose-400/20',
-                <span>{row.left.value}</span>,
+                '',
+                'bg-rose-500/10 text-rose-400',
+                <span>{row.left.value || '\u00A0'}</span>,
                 `${row.key}-left`,
+                row.left.number,
               );
             }
 
             return renderLineBlock(
-              ' ',
+              '',
               'text-zinc-300',
               <span>{row.left.value}</span>,
               `${row.key}-left`,
+              row.left.number,
             );
           })}
         </div>
       );
     }
 
-    return renderPlainTextContent(oldText);
+    return null;
   };
 
   const renderChangedContent = () => {
@@ -156,23 +424,41 @@ export default function DiffTool() {
         <div className="min-h-full">
           {rows.map((row) => {
             if (row.right.type === 'empty') {
-              return renderLineBlock(' ', '', <span className="text-zinc-600">&nbsp;</span>, `${row.key}-right`);
+              return renderLineBlock(
+                '',
+                'text-zinc-600',
+                <span>&nbsp;</span>,
+                `${row.key}-right`,
+                row.right.number,
+              );
+            }
+
+            if (row.right.type === 'added' && row.left?.type === 'removed' && row.left.value && row.right.value) {
+              return renderLineBlock(
+                '',
+                'bg-emerald-500/10',
+                <span>{renderWordDiff(row.left.value, row.right.value, 'added')}</span>,
+                `${row.key}-right`,
+                row.right.number,
+              );
             }
 
             if (row.right.type === 'added') {
               return renderLineBlock(
-                '+',
-                'rounded px-1 py-0.5 bg-emerald-400/10 text-emerald-200 border-b border-emerald-400/20',
-                <span>{row.right.value}</span>,
+                '',
+                'bg-emerald-500/10 text-emerald-400',
+                <span>{row.right.value || '\u00A0'}</span>,
                 `${row.key}-right`,
+                row.right.number,
               );
             }
 
             return renderLineBlock(
-              ' ',
+              '',
               'text-zinc-300',
               <span>{row.right.value}</span>,
               `${row.key}-right`,
+              row.right.number,
             );
           })}
         </div>
@@ -180,179 +466,71 @@ export default function DiffTool() {
     }
 
     if (diffMode === 'json') {
-      const formattedOld = formattedOriginalJson ?? oldText;
-      const formattedNew = formattedNewJson ?? newText;
-      const jsonDiffResult = Diff.diffLines(formattedOld, formattedNew);
-      return renderDiffLines(jsonDiffResult);
-    }
-
-    if (!diffResult) return null;
-    return renderDiffLines(diffResult);
-  };
-
-  const renderDiffLines = (lines) => {
-    const renderWordDiff = (oldLine, newLine, type) => {
-      const wordDiff = Diff.diffWordsWithSpace(oldLine, newLine);
-      return wordDiff.map((word, i) => {
-        if (type === 'removed') {
-          if (word.added) return null;
-          const removedClass = word.removed
-            ? 'bg-rose-500/20 text-rose-200 border-b border-rose-500/30'
-            : 'text-zinc-300';
-          return (
-            <span key={i} className={`${removedClass} px-0.5`}>
-              {word.value}
-            </span>
-          );
-        }
-
-        if (type === 'added') {
-          if (word.removed) return null;
-          const addedClass = word.added
-            ? 'bg-emerald-500/20 text-emerald-200 border-b border-emerald-500/30'
-            : 'text-zinc-300';
-          return (
-            <span key={i} className={`${addedClass} px-0.5`}>
-              {word.value}
-            </span>
-          );
-        }
-
-        return (
-          <span key={i} className="text-zinc-300 px-0.5">
-            {word.value}
-          </span>
-        );
-      });
-    };
-
-    const renderLineBlock = (key, prefix, lineClass, lineContent) => (
-      <div key={key} className={`flex items-start gap-2 ${lineClass}`}>
-        <span className="inline-flex w-5 shrink-0 text-xs font-semibold leading-5 text-zinc-400">
-          {prefix}
-        </span>
-        <span className="flex-1 whitespace-pre-wrap text-sm">
-          {lineContent}
-        </span>
-      </div>
-    );
-
-    const rows = [];
-
-    for (let index = 0; index < lines.length; index += 1) {
-      const part = lines[index];
-      const nextPart = lines[index + 1];
-
-      if (part.removed && nextPart?.added) {
-        const oldLines = part.value.split('\n');
-        const newLines = nextPart.value.split('\n');
-        const maxLen = Math.max(oldLines.length, newLines.length);
-
-        for (let lineIndex = 0; lineIndex < maxLen; lineIndex += 1) {
-          const oldLine = oldLines[lineIndex] ?? '';
-          const newLine = newLines[lineIndex] ?? '';
-
-          if (oldLine || newLine) {
-            if (oldLine && newLine) {
-              rows.push(
-                renderLineBlock(
-                  `removed-${index}-${lineIndex}`,
-                  '-',
-                  'rounded px-1 py-0.5 bg-rose-400/10 text-rose-200 border-b border-rose-400/20',
-                  renderWordDiff(oldLine, newLine, 'removed'),
-                ),
-              );
-              rows.push(
-                renderLineBlock(
-                  `added-${index}-${lineIndex}`,
-                  '+',
-                  'rounded px-1 py-0.5 bg-emerald-400/10 text-emerald-200 border-b border-emerald-400/20',
-                  renderWordDiff(oldLine, newLine, 'added'),
-                ),
-              );
-            } else if (oldLine) {
-              rows.push(
-                renderLineBlock(
-                  `removed-${index}-${lineIndex}`,
-                  '-',
-                  'rounded px-1 py-0.5 bg-rose-400/10 text-rose-200 border-b border-rose-400/20',
-                  <span className="text-rose-200">{oldLine}</span>,
-                ),
-              );
-            } else {
-              rows.push(
-                renderLineBlock(
-                  `added-${index}-${lineIndex}`,
-                  '+',
-                  'rounded px-1 py-0.5 bg-emerald-400/10 text-emerald-200 border-b border-emerald-400/20',
-                  <span className="text-emerald-200">{newLine}</span>,
-                ),
-              );
-            }
-          }
-        }
-
-        index += 1;
-        continue;
+      if (formattedOriginalJson === null || formattedNewJson === null) {
+        return renderJsonInvalidMessage();
       }
 
-      const lineSegments = part.value.split('\n');
-      const prefix = part.added ? '+' : part.removed ? '-' : ' ';
-      const lineClass = part.added
-        ? 'rounded px-1 py-0.5 bg-emerald-400/10 text-emerald-200 border-b border-emerald-400/20'
-        : part.removed
-          ? 'rounded px-1 py-0.5 bg-rose-400/10 text-rose-200 border-b border-rose-400/20'
-          : '';
-
-      lineSegments.forEach((line, lineIndex) => {
-        if (lineIndex === lineSegments.length - 1 && line === '') {
-          return;
-        }
-
-        rows.push(
-          renderLineBlock(
-            `line-${index}-${lineIndex}`,
-            prefix,
-            lineClass,
-            <span className={part.added ? 'text-emerald-200' : part.removed ? 'text-rose-200' : 'text-zinc-300'}>
-              {line}
-            </span>,
-          ),
-        );
-      });
+      if (!diffResult) return renderPlainTextContent(formattedNewJson ?? newText);
+      const parsedOld = JSON.parse(oldText);
+      const parsedNew = JSON.parse(newText);
+      return <div className="min-h-full text-sm font-mono">{renderJsonDiff(parsedOld, parsedNew)}</div>;
     }
 
-    return <div className="min-h-full">{rows}</div>;
+    return null;
   };
+
+
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">
       {/* Top Controls */}
-      <div className="flex shrink-0 justify-center gap-2 border-b border-zinc-800/90 px-2 py-2 sm:px-3">
-        <button
-          type="button"
-          className={`${actionBtn} ${diffMode === 'two-side' ? 'bg-zinc-700 text-white' : ''}`}
-          onClick={() => setDiffMode('two-side')}
-        >
-          Two Side Diff
-        </button>
-        <button
-          type="button"
-          className={`${actionBtn} ${diffMode === 'bitbucket' ? 'bg-zinc-700 text-white' : ''}`}
-          onClick={() => setDiffMode('bitbucket')}
-        >
-          Bitbucket Diff
-        </button>
-        <button
-          type="button"
-          className={`${actionBtn} ${diffMode === 'json' ? 'bg-zinc-700 text-white' : ''}`}
-          onClick={() => setDiffMode('json')}
-        >
-          JSON Diff
-        </button>
-        <button type="button" className={actionBtn} onClick={handleClearAll}>
-          Clear All
-        </button>
+      <div className="grid shrink-0 grid-cols-1 gap-2 border-b border-zinc-800/90 px-2 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-3">
+        <div className="hidden min-w-0 sm:block" aria-hidden="true" />
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          <button
+            type="button"
+            className={`${actionBtn} ${diffMode === 'two-side' ? 'bg-zinc-700 text-white' : ''}`}
+            onClick={() => {
+              setDiffMode('two-side');
+              handleCompare();
+              flashSuccess('Word diff computed');
+            }}
+          >
+            Word Diff
+          </button>
+
+          <button
+            type="button"
+            className={`${actionBtn} ${diffMode === 'json' ? 'bg-zinc-700 text-white' : ''}`}
+            onClick={() => {
+              try {
+                const parsedOld = JSON.parse(oldText);
+                const parsedNew = JSON.parse(newText);
+                const formattedOld = JSON.stringify(parsedOld, null, 2);
+                const formattedNew = JSON.stringify(parsedNew, null, 2);
+                setOldText(formattedOld);
+                setNewText(formattedNew);
+                setDiffMode('json');
+                handleCompare(formattedOld, formattedNew);
+                flashSuccess('JSON diff computed');
+              } catch {
+                clearDiff();
+                setErr('Invalid JSON');
+              }
+            }}
+          >
+            JSON Diff
+          </button>
+          <button type="button" className={actionBtn} onClick={() => { clearDiff(); flashSuccess('Diff cleared'); }}>
+            Edit
+          </button>
+          <button type="button" className={actionBtn} onClick={() => { handleClearAll(); flashSuccess('All cleared'); }}>
+            Clear All
+          </button>
+        </div>
+        <div className="flex min-w-0 justify-end">
+          <JsonFormatterHeader status={status} />
+        </div>
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-zinc-800 md:flex-row md:divide-x md:divide-y-0">
@@ -373,22 +551,27 @@ export default function DiffTool() {
             <textarea
               className={`${editorShell} absolute inset-0 z-10`}
               style={{
-                color: diffResult ? 'transparent' : 'inherit',
+                display: diffResult ? 'none' : 'block',
                 caretColor: 'white',
                 padding: '12px',
               }}
               spellCheck={false}
+              readOnly={!!diffResult}
               placeholder="Paste original text..."
               value={oldText}
               onChange={(e) => {
                 setOldText(e.target.value);
-                if (diffResult) clearDiff();
+                clearDiff();
               }}
-              onKeyDown={(e) => handleTextareaTabKeyDown(e, setOldText)}
+              onKeyDown={(e) => {
+                if (!diffResult) {
+                  handleTextareaTabKeyDown(e, setOldText);
+                }
+              }}
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-0 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed pointer-events-none"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderOriginalContent()}
@@ -413,22 +596,27 @@ export default function DiffTool() {
             <textarea
               className={`${editorShell} absolute inset-0 z-10`}
               style={{
-                color: diffResult ? 'transparent' : 'inherit',
+                display: diffResult ? 'none' : 'block',
                 caretColor: 'white',
                 padding: '12px',
               }}
               spellCheck={false}
+              readOnly={!!diffResult}
               placeholder="Paste changed text..."
               value={newText}
               onChange={(e) => {
                 setNewText(e.target.value);
-                if (diffResult) clearDiff();
+                clearDiff();
               }}
-              onKeyDown={(e) => handleTextareaTabKeyDown(e, setNewText)}
+              onKeyDown={(e) => {
+                if (!diffResult) {
+                  handleTextareaTabKeyDown(e, setNewText);
+                }
+              }}
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-0 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed pointer-events-none"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderChangedContent()}
