@@ -1,12 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { encodeUtf8ToBase64, decodeBase64ToUtf8 } from '../../lib/base64';
 import { STATUS_TYPE } from '../../lib/json-formatter/constants';
+import { useLocalStorage } from '../../lib/useLocalStorage';
 
 const emptyStatus = { message: '', type: STATUS_TYPE.NONE };
 
 export function useBase64Split() {
-  const [plainText, setPlainText] = useState('');
-  const [base64Text, setBase64Text] = useState('');
+  const [plainText, setPlainText] = useLocalStorage('base64-tool-plain-text', '');
+  const [base64Text, setBase64Text] = useLocalStorage('base64-tool-base64-text', '');
   const [status, setStatus] = useState(emptyStatus);
 
   const clearStatus = useCallback(() => setStatus(emptyStatus), []);

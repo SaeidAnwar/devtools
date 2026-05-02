@@ -3,6 +3,7 @@ import AppNavbar from './components/AppNavbar';
 import Base64Tool from './components/base64-tool';
 import JsonFormatter from './components/json-formatter';
 import JwtTool from './components/jwt-tool';
+import DiffTool from './components/diff-tool/DiffTool'
 import './App.css';
 
 function App() {
@@ -29,6 +30,12 @@ function App() {
           aria-hidden={activeTool !== 'jwt'}
         >
           <JwtTool />
+        </div>
+        <div
+          className={activeTool === 'diff' ? 'flex h-full min-h-0 min-w-0 flex-col' : 'hidden'}
+          aria-hidden={activeTool !== 'diff'}
+        >
+          <DiffTool />
         </div>
       </div>
     </div>
