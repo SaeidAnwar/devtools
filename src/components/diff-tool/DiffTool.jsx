@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import * as Diff from 'diff';
 import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
 import { useLocalStorage } from '../../lib/useLocalStorage';
@@ -26,8 +26,6 @@ export default function DiffTool() {
     handleCompare,
     handleClearAll,
     clearDiff,
-    flashStatus,
-    clearStatus,
     flashSuccess,
     setErr,
   } = useDiffTool();
@@ -527,6 +525,23 @@ export default function DiffTool() {
 
 
 
+  const handleCopyField = async (textToCopy) => {
+    if (!textToCopy) return;
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      flashSuccess('Copied to clipboard');
+    } catch {
+      setErr('Copy failed');
+    }
+  };
+
+  const handleClearField = (setText) => {
+    setText('');
+    clearDiff();
+    flashSuccess('Cleared');
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">
       {/* Top Controls */}
@@ -587,8 +602,8 @@ export default function DiffTool() {
             title="Original Text"
             right={
               <FieldCopyClear
-                onCopy={() => navigator.clipboard.writeText(oldText)}
-                onClear={() => { setOldText(''); clearDiff(); }}
+                onCopy={() => { void handleCopyField(oldText); }}
+                onClear={() => { handleClearField(setOldText); }}
                 copyDisabled={!oldText}
               />
             }
@@ -632,8 +647,8 @@ export default function DiffTool() {
             title="Changed Text"
             right={
               <FieldCopyClear
-                onCopy={() => navigator.clipboard.writeText(newText)}
-                onClear={() => { setNewText(''); clearDiff(); }}
+                onCopy={() => { void handleCopyField(newText); }}
+                onClear={() => { handleClearField(setNewText); }}
                 copyDisabled={!newText}
               />
             }
