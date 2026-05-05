@@ -8,7 +8,7 @@ import JsonFormatterHeader from '../json-formatter/JsonFormatterHeader';
 import { useDiffTool } from './useDiffTool';
 
 const editorShell =
-  'min-h-0 w-full flex-1 resize-none overflow-auto border-0 bg-transparent p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words outline-none focus:outline-none';
+  'min-h-0 w-full flex-1 resize-none overflow-auto border-0 bg-transparent p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap wrap-break-word outline-none focus:outline-none';
 
 const actionBtn =
   'rounded border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-300';
@@ -617,7 +617,7 @@ export default function DiffTool() {
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap break-words font-mono text-sm leading-relaxed"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderOriginalContent()}
@@ -662,7 +662,7 @@ export default function DiffTool() {
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap break-words font-mono text-sm leading-relaxed"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderChangedContent()}
