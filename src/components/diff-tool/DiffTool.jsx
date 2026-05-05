@@ -8,7 +8,7 @@ import JsonFormatterHeader from '../json-formatter/JsonFormatterHeader';
 import { useDiffTool } from './useDiffTool';
 
 const editorShell =
-  'min-h-0 w-full flex-1 resize-none overflow-auto border-0 bg-transparent p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap wrap-break-word outline-none focus:outline-none';
+  'min-h-0 w-full flex-1 resize-none overflow-auto border-0 bg-transparent p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words outline-none focus:outline-none';
 
 const actionBtn =
   'rounded border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-300';
@@ -193,7 +193,6 @@ export default function DiffTool() {
   const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
 
   const formatJsonValue = (value) => {
-    if (typeof value === 'string') return `"${value}"`;
     if (value === null) return 'null';
     return JSON.stringify(value);
   };
@@ -211,6 +210,53 @@ export default function DiffTool() {
       );
     };
 
+    const renderStandaloneArrayItem = (item, level, comma, className = 'text-zinc-300') => {
+      if (isObject(item)) {
+        rows.push(renderLine('{', level, className));
+        renderStandaloneObject(item, level + 1, className);
+        rows.push(renderLine(`}${comma}`, level, className));
+        return;
+      }
+      if (Array.isArray(item)) {
+        rows.push(renderLine('[', level, className));
+        renderStandaloneArray(item, level + 1, className);
+        rows.push(renderLine(`]${comma}`, level, className));
+        return;
+      }
+      rows.push(renderLine(`${formatJsonValue(item)}${comma}`, level, className));
+    };
+
+    const renderStandaloneEntry = (key, value, level, comma, className = 'text-zinc-300') => {
+      if (isObject(value)) {
+        rows.push(renderLine(`"${key}": {`, level, className));
+        renderStandaloneObject(value, level + 1, className);
+        rows.push(renderLine(`}${comma}`, level, className));
+        return;
+      }
+      if (Array.isArray(value)) {
+        rows.push(renderLine(`"${key}": [`, level, className));
+        renderStandaloneArray(value, level + 1, className);
+        rows.push(renderLine(`]${comma}`, level, className));
+        return;
+      }
+      rows.push(renderLine(`"${key}": ${formatJsonValue(value)}${comma}`, level, className));
+    };
+
+    const renderStandaloneObject = (obj = {}, level, className = 'text-zinc-300') => {
+      const keys = Object.keys(obj);
+      keys.forEach((key, index) => {
+        const comma = index === keys.length - 1 ? '' : ',';
+        renderStandaloneEntry(key, obj[key], level, comma, className);
+      });
+    };
+
+    const renderStandaloneArray = (arr = [], level, className = 'text-zinc-300') => {
+      arr.forEach((item, index) => {
+        const comma = index === arr.length - 1 ? '' : ',';
+        renderStandaloneArrayItem(item, level, comma, className);
+      });
+    };
+
     const renderObjectInner = (oldObj = {}, newObj = {}, level) => {
       const keys = [];
       Object.keys(oldObj).forEach((key) => { if (!keys.includes(key)) keys.push(key); });
@@ -224,18 +270,18 @@ export default function DiffTool() {
         const comma = index === keys.length - 1 ? '' : ',';
 
         if (oldHas && !newHas) {
-          rows.push(renderLine(`"${key}": ${formatJsonValue(oldVal)}${comma}`, level, 'text-rose-400'));
+          renderStandaloneEntry(key, oldVal, level, comma, 'text-rose-400');
           return;
         }
 
         if (!oldHas && newHas) {
-          rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level, 'text-emerald-400'));
+          renderStandaloneEntry(key, newVal, level, comma, 'text-emerald-400');
           return;
         }
 
         if (isObject(oldVal) && isObject(newVal)) {
           if (JSON.stringify(oldVal) === JSON.stringify(newVal)) {
-            rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level));
+            renderStandaloneEntry(key, newVal, level, comma);
             return;
           }
           rows.push(renderLine(`"${key}": {`, level));
@@ -246,7 +292,7 @@ export default function DiffTool() {
 
         if (Array.isArray(oldVal) && Array.isArray(newVal)) {
           if (JSON.stringify(oldVal) === JSON.stringify(newVal)) {
-            rows.push(renderLine(`"${key}": ${formatJsonValue(newVal)}${comma}`, level));
+            renderStandaloneEntry(key, newVal, level, comma);
             return;
           }
           rows.push(renderLine(`"${key}": [`, level));
@@ -284,17 +330,17 @@ export default function DiffTool() {
         const comma = idx === maxLength - 1 ? '' : ',';
 
         if (idx >= oldArr.length) {
-          rows.push(renderLine(`${formatJsonValue(newItem)}${comma}`, level, 'text-emerald-400'));
+          renderStandaloneArrayItem(newItem, level, comma, 'text-emerald-400');
           continue;
         }
 
         if (idx >= newArr.length) {
-          rows.push(renderLine(`${formatJsonValue(oldItem)}${comma}`, level, 'text-rose-400'));
+          renderStandaloneArrayItem(oldItem, level, comma, 'text-rose-400');
           continue;
         }
 
         if (JSON.stringify(oldItem) === JSON.stringify(newItem)) {
-          rows.push(renderLine(`${formatJsonValue(newItem)}${comma}`, level));
+          renderStandaloneArrayItem(newItem, level, comma);
           continue;
         }
 
@@ -571,7 +617,7 @@ export default function DiffTool() {
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap break-words font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderOriginalContent()}
@@ -616,7 +662,7 @@ export default function DiffTool() {
             />
             {diffResult && (
               <div 
-                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
+                className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap break-words font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
                 {renderChangedContent()}

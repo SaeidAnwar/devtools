@@ -21,11 +21,13 @@ function firstStructuralOpen(input) {
 }
 
 /**
- * If input contains a balanced outer `{...}` or `[...]` (string-aware), return [start, end] inclusive.
+ * Balanced `{...}` or `[...]` from a fixed opener index, string-aware.
+ * Returns [start, end] where end is inclusive.
  */
-export function extractBalancedBlock(input) {
-  const start = firstStructuralOpen(input);
-  if (start === -1) return null;
+function extractBalancedBlockFrom(input, start) {
+  if (start < 0 || start >= input.length) return null;
+  const opener = input[start];
+  if (opener !== '{' && opener !== '[') return null;
 
   let depth = 0;
   let inString = false;
@@ -56,6 +58,51 @@ export function extractBalancedBlock(input) {
     }
   }
   return null;
+}
+
+/**
+ * If input contains a balanced outer `{...}` or `[...]` (string-aware), return [start, end] inclusive.
+ */
+export function extractBalancedBlock(input) {
+  const start = firstStructuralOpen(input);
+  if (start === -1) return null;
+  return extractBalancedBlockFrom(input, start);
+}
+
+function findLongestBalancedBlock(input) {
+  let best = null;
+  let bestLen = -1;
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (c !== '{' && c !== '[') continue;
+    const range = extractBalancedBlockFrom(input, i);
+    if (!range) continue;
+    const len = range.end - range.start + 1;
+    if (len > bestLen) {
+      bestLen = len;
+      best = range;
+    }
+  }
+  return best;
+}
+
+function findAllBalancedBlocks(input) {
+  const blocks = [];
+  for (let i = 0; i < input.length; ) {
+    const c = input[i];
+    if (c !== '{' && c !== '[') {
+      i += 1;
+      continue;
+    }
+    const block = extractBalancedBlockFrom(input, i);
+    if (!block) {
+      i += 1;
+      continue;
+    }
+    blocks.push(block);
+    i = block.end + 1;
+  }
+  return blocks;
 }
 
 /**
@@ -133,16 +180,24 @@ export function roughFormatInvalidJson(input) {
   const trimmed = input.trim();
   if (!trimmed) return '';
 
-  const ext = extractBalancedBlock(trimmed);
-  if (ext && ext.end > ext.start) {
-    const head = trimmed.slice(0, ext.start);
-    const body = trimmed.slice(ext.start, ext.end + 1);
-    const tail = trimmed.slice(ext.end + 1);
-    const core = roughFormatIndented(body);
+  const blocks = findAllBalancedBlocks(trimmed);
+  if (blocks.length > 0) {
     let result = '';
-    if (head.trim()) result += head.replace(/\s+$/g, '') + '\n';
-    result += core;
-    if (tail.trim()) result += '\n' + tail.replace(/^\s+/, '');
+    let cursor = 0;
+
+    for (const block of blocks) {
+      result += trimmed.slice(cursor, block.start);
+
+      const body = trimmed.slice(block.start, block.end + 1);
+      try {
+        result += JSON.stringify(JSON.parse(body), null, 2);
+      } catch {
+        result += roughFormatIndented(body);
+      }
+      cursor = block.end + 1;
+    }
+
+    result += trimmed.slice(cursor);
     return result;
   }
 
