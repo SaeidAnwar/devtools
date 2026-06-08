@@ -4,7 +4,7 @@ export default function JsonFormatterHeader({ status }) {
       {status.message ? (
         <p
           className={`truncate text-right text-xs ${
-            status.type === 'error' ? 'text-zinc-300' : 'text-zinc-400'
+            status.type === 'error' ? 'text-red-400' : status.type === 'success' ? 'text-green-400' : 'text-zinc-400'
           }`}
           title={status.message}
         >

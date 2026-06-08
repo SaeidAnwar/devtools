@@ -27,7 +27,6 @@ function App() {
   const handleAddTab = () => {
     setTabsMap((prev) => {
       const toolTabs = prev[activeTool] || [];
-      if (toolTabs.length >= 10) return prev;
       
       const newId = String(Math.max(0, ...toolTabs.map(t => parseInt(t.id, 10) || 0)) + 1);
       
@@ -41,19 +40,22 @@ function App() {
       const toolTabs = prev[activeTool] || [];
       const newTabs = toolTabs.filter(t => t.id !== tabId);
       
-      if (newTabs.length === 0) {
-        setActiveTabIds((p) => ({ ...p, [activeTool]: '1' }));
-        return { ...prev, [activeTool]: [{ id: '1' }] };
-      }
-      
-      setActiveTabIds((p) => {
-        if (p[activeTool] === tabId) {
-          return { ...p, [activeTool]: newTabs[newTabs.length - 1].id };
-        }
-        return p;
-      });
+      let updatedTabs = newTabs;
+      let nextActiveId = tabId;
 
-      return { ...prev, [activeTool]: newTabs };
+      if (newTabs.length === 1) {
+        updatedTabs = [{ id: '1' }];
+        nextActiveId = '1';
+      } else {
+        if (activeTabIds[activeTool] === tabId) {
+          nextActiveId = newTabs[newTabs.length - 1].id;
+        } else {
+          nextActiveId = activeTabIds[activeTool];
+        }
+      }
+
+      setActiveTabIds((p) => ({ ...p, [activeTool]: nextActiveId }));
+      return { ...prev, [activeTool]: updatedTabs };
     });
   };
 

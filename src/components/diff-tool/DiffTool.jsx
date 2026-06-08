@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import * as Diff from 'diff';
 import { handleTextareaTabKeyDown } from '../../lib/textareaTab';
 import { useLocalStorage } from '../../lib/useLocalStorage';
@@ -30,9 +30,36 @@ export default function DiffTool({ instanceId }) {
     setErr,
   } = useDiffTool(instanceId);
 
+  const leftScrollRef = useRef(null);
+  const rightScrollRef = useRef(null);
+  const isSyncingLeft = useRef(false);
+  const isSyncingRight = useRef(false);
 
+  const handleLeftScroll = (e) => {
+    if (!diffResult) return;
+    if (isSyncingRight.current) {
+      isSyncingRight.current = false;
+      return;
+    }
+    if (rightScrollRef.current) {
+      isSyncingLeft.current = true;
+      rightScrollRef.current.scrollTop = e.target.scrollTop;
+      rightScrollRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
 
-  const formattedOriginalJson = useMemo(() => {
+  const handleRightScroll = (e) => {
+    if (!diffResult) return;
+    if (isSyncingLeft.current) {
+      isSyncingLeft.current = false;
+      return;
+    }
+    if (leftScrollRef.current) {
+      isSyncingRight.current = true;
+      leftScrollRef.current.scrollTop = e.target.scrollTop;
+      leftScrollRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };  const formattedOriginalJson = useMemo(() => {
     try {
       return JSON.stringify(JSON.parse(oldText), null, 2);
     } catch {
@@ -548,46 +575,55 @@ export default function DiffTool({ instanceId }) {
       <div className="grid shrink-0 grid-cols-1 gap-2 border-b border-zinc-800/90 px-2 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:px-3">
         <div className="hidden min-w-0 sm:block" aria-hidden="true" />
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          <button
-            type="button"
-            className={`${actionBtn} ${diffMode === 'two-side' ? 'bg-zinc-700 text-white' : ''}`}
-            onClick={() => {
-              setDiffMode('two-side');
-              handleCompare();
-              flashSuccess('Word diff computed');
-            }}
-          >
-            Word Diff
-          </button>
+          <nav className="flex items-center justify-center gap-0.5 rounded-md bg-zinc-900/50 p-0.5 ring-1 ring-zinc-700/50" aria-label="View mode">
+            <button
+              type="button"
+              className={`rounded px-2 py-0.5 text-xs transition-colors ${diffMode === 'two-side' && diffResult ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+              onClick={() => {
+                setDiffMode('two-side');
+                handleCompare();
+                flashSuccess('Word diff computed');
+              }}
+            >
+              Word Diff
+            </button>
 
-          <button
-            type="button"
-            className={`${actionBtn} ${diffMode === 'json' ? 'bg-zinc-700 text-white' : ''}`}
-            onClick={() => {
-              try {
-                const parsedOld = JSON.parse(oldText);
-                const parsedNew = JSON.parse(newText);
-                const formattedOld = JSON.stringify(parsedOld, null, 2);
-                const formattedNew = JSON.stringify(parsedNew, null, 2);
-                setOldText(formattedOld);
-                setNewText(formattedNew);
-                setDiffMode('json');
-                handleCompare(formattedOld, formattedNew);
-                flashSuccess('JSON diff computed');
-              } catch {
-                clearDiff();
-                setErr('Invalid JSON');
-              }
-            }}
-          >
-            JSON Diff
-          </button>
-          <button type="button" className={actionBtn} onClick={() => { clearDiff(); flashSuccess('Diff cleared'); }}>
-            Edit
-          </button>
-          <button type="button" className={actionBtn} onClick={() => { handleClearAll(); flashSuccess('All cleared'); }}>
-            Clear All
-          </button>
+            <button
+              type="button"
+              className={`rounded px-2 py-0.5 text-xs transition-colors ${diffMode === 'json' && diffResult ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+              onClick={() => {
+                try {
+                  const parsedOld = JSON.parse(oldText);
+                  const parsedNew = JSON.parse(newText);
+                  const formattedOld = JSON.stringify(parsedOld, null, 2);
+                  const formattedNew = JSON.stringify(parsedNew, null, 2);
+                  setOldText(formattedOld);
+                  setNewText(formattedNew);
+                  setDiffMode('json');
+                  handleCompare(formattedOld, formattedNew);
+                  flashSuccess('JSON diff computed');
+                } catch {
+                  clearDiff();
+                  setErr('Invalid JSON');
+                }
+              }}
+            >
+              JSON Diff
+            </button>
+            <button
+              type="button"
+              className={`rounded px-2 py-0.5 text-xs transition-colors ${!diffResult ? 'bg-zinc-800 text-zinc-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+              onClick={() => { clearDiff(); flashSuccess('Diff cleared'); }}
+            >
+              Edit
+            </button>
+          </nav>
+          
+          <div className="ml-1 flex items-center">
+            <button type="button" className={actionBtn} onClick={() => { handleClearAll(); flashSuccess('All cleared'); }}>
+              Clear All
+            </button>
+          </div>
         </div>
         <div className="flex min-w-0 justify-end">
           <JsonFormatterHeader status={status} />
@@ -632,6 +668,8 @@ export default function DiffTool({ instanceId }) {
             />
             {diffResult && (
               <div 
+                ref={leftScrollRef}
+                onScroll={handleLeftScroll}
                 className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
@@ -677,6 +715,8 @@ export default function DiffTool({ instanceId }) {
             />
             {diffResult && (
               <div 
+                ref={rightScrollRef}
+                onScroll={handleRightScroll}
                 className="absolute inset-0 z-10 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed"
                 style={{ padding: '12px' }}
               >
