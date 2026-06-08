@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import EditorFieldBar from '../EditorFieldBar';
 import FieldCopyClear from '../FieldCopyClear';
 import JsonNode from '../JsonNode';
@@ -60,6 +60,13 @@ export default function JsonFormatterWorkspace({
     requestAnimationFrame(syncCaret);
   }, [jsonInput, syncCaret]);
 
+  useLayoutEffect(() => {
+    if (mirrorRef.current && taRef.current) {
+      mirrorRef.current.scrollTop = taRef.current.scrollTop;
+      mirrorRef.current.scrollLeft = taRef.current.scrollLeft;
+    }
+  });
+
   return (
     <div className={`relative flex min-h-0 flex-col bg-zinc-950 ${className}`}>
       {activeTab === TAB.TEXT ? (
@@ -79,22 +86,30 @@ export default function JsonFormatterWorkspace({
             ref={mirrorRef}
             className={`${editorShell} col-start-1 row-start-1 pointer-events-none border border-transparent`}
             aria-hidden="true"
+            inert="true"
           >
             {range == null ? (
-              <span className="text-zinc-300">{jsonInput}</span>
+              <span className="text-zinc-300">
+                {jsonInput}
+                {jsonInput.endsWith('\n') ? ' ' : ''}
+              </span>
             ) : (
               <>
                 <span className="text-zinc-500">{jsonInput.slice(0, range.start)}</span>
                 <span className="text-zinc-300">{jsonInput.slice(range.start, range.end)}</span>
-                <span className="text-zinc-500">{jsonInput.slice(range.end)}</span>
+                <span className="text-zinc-500">
+                  {jsonInput.slice(range.end)}
+                  {jsonInput.endsWith('\n') ? ' ' : ''}
+                </span>
               </>
             )}
           </pre>
           <textarea
             ref={taRef}
-            className={`${editorShell} col-start-1 row-start-1 resize-none bg-transparent text-transparent caret-zinc-400 selection:bg-zinc-700/50 placeholder:text-zinc-600 focus:outline-none`}
+            className={`${editorShell} col-start-1 row-start-1 resize-none bg-transparent text-transparent caret-zinc-400 selection:bg-zinc-700/50 placeholder:text-zinc-600 focus:outline-none border border-transparent`}
             placeholder="Paste JSON here…"
             spellCheck={false}
+            data-gramm="false"
             value={jsonInput}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
