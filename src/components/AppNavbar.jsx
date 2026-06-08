@@ -70,13 +70,15 @@ export default function AppNavbar({
                 </div>
               );
             })}
-            <button
-              type="button"
-              onClick={onTabAdd}
-              className="flex h-7 w-7 items-center justify-center rounded border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-300"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-            </button>
+            {activeToolTabs.length < 20 && (
+              <button
+                type="button"
+                onClick={onTabAdd}
+                className="flex h-7 w-7 items-center justify-center rounded border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-300"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              </button>
+            )}
           </div>
       )}
     </header>

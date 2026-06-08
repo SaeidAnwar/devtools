@@ -27,6 +27,7 @@ function App() {
   const handleAddTab = () => {
     setTabsMap((prev) => {
       const toolTabs = prev[activeTool] || [];
+      if (toolTabs.length >= 20) return prev;
       
       const newId = String(Math.max(0, ...toolTabs.map(t => parseInt(t.id, 10) || 0)) + 1);
       
