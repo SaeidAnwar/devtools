@@ -72,7 +72,7 @@ const JWT_HEADER_PRESETS = [
   },
 ];
 
-export default function JwtTool() {
+export default function JwtTool({ instanceId }) {
   const [secretVisible, setSecretVisible] = useState(false);
   const {
     headerText,
@@ -103,7 +103,7 @@ export default function JwtTool() {
     handleClearSecret,
     handleClearJwt,
     handleClearAll,
-  } = useJwtTool();
+  } = useJwtTool(instanceId);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">

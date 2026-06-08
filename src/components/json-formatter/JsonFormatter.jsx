@@ -4,7 +4,7 @@ import JsonFormatterToolbar from './JsonFormatterToolbar';
 import JsonFormatterWorkspace from './JsonFormatterWorkspace';
 import { useJsonViewer } from './useJsonViewer';
 
-export default function JsonFormatter() {
+export default function JsonFormatter({ instanceId }) {
   const {
     jsonInput,
     setJsonInput,
@@ -17,7 +17,7 @@ export default function JsonFormatter() {
     handleMinify,
     handleCopy,
     handleClear,
-  } = useJsonViewer();
+  } = useJsonViewer(instanceId);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">

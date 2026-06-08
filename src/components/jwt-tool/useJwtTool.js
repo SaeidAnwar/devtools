@@ -17,9 +17,9 @@ async function copyText(text) {
   await navigator.clipboard.writeText(text);
 }
 
-export function useJwtTool() {
+export function useJwtTool(instanceId = 'default') {
   const rowIdRef = useRef(0);
-  const [kvRows, setKvRows] = useLocalStorage('jwt-tool-kv-rows', [{ id: 'kv-0', key: '', value: '' }]);
+  const [kvRows, setKvRows] = useLocalStorage(`jwt-tool-kv-rows-${instanceId}`, [{ id: 'kv-0', key: '', value: '' }]);
 
   const highestRowId = kvRows.reduce((maxId, row) => {
     const idNumber = Number(row.id.replace(/^kv-/, ''));
@@ -32,11 +32,11 @@ export function useJwtTool() {
     return `kv-${rowIdRef.current}`;
   }, []);
 
-  const [headerText, setHeaderText] = useLocalStorage('jwt-tool-header-text', DEFAULT_HEADER);
-  const [payloadText, setPayloadText] = useLocalStorage('jwt-tool-payload-text', '{}');
-  const [payloadEditMode, setPayloadEditMode] = useLocalStorage('jwt-tool-payload-edit-mode', PAYLOAD_MODE.JSON);
-  const [secret, setSecret] = useLocalStorage('jwt-tool-secret', '');
-  const [jwtText, setJwtText] = useLocalStorage('jwt-tool-jwt-text', '');
+  const [headerText, setHeaderText] = useLocalStorage(`jwt-tool-header-text-${instanceId}`, DEFAULT_HEADER);
+  const [payloadText, setPayloadText] = useLocalStorage(`jwt-tool-payload-text-${instanceId}`, '{}');
+  const [payloadEditMode, setPayloadEditMode] = useLocalStorage(`jwt-tool-payload-edit-mode-${instanceId}`, PAYLOAD_MODE.JSON);
+  const [secret, setSecret] = useLocalStorage(`jwt-tool-secret-${instanceId}`, '');
+  const [jwtText, setJwtText] = useLocalStorage(`jwt-tool-jwt-text-${instanceId}`, '');
   const [status, setStatus] = useState(emptyStatus);
 
   const clearStatus = useCallback(() => setStatus(emptyStatus), []);

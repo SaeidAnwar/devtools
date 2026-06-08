@@ -13,9 +13,9 @@ function computeLineDifferences(oldText, newText) {
   return Diff.diffLines(oldText, newText);
 }
 
-export function useDiffTool() {
-  const [oldText, setOldText] = useLocalStorage('diff-tool-old-text', '');
-  const [newText, setNewText] = useLocalStorage('diff-tool-new-text', '');
+export function useDiffTool(instanceId = 'default') {
+  const [oldText, setOldText] = useLocalStorage(`diff-tool-old-text-${instanceId}`, '');
+  const [newText, setNewText] = useLocalStorage(`diff-tool-new-text-${instanceId}`, '');
   const [diffResult, setDiffResult] = useState(() => computeLineDifferences(oldText, newText));
   const [status, setStatus] = useState(emptyStatus);
 

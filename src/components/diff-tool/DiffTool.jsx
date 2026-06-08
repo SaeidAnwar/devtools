@@ -13,7 +13,7 @@ const editorShell =
 const actionBtn =
   'rounded border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-300';
 
-export default function DiffTool() {
+export default function DiffTool({ instanceId }) {
   const [diffMode, setDiffMode] = useLocalStorage('diff-tool-mode', 'two-side');
 
   const {
@@ -28,7 +28,7 @@ export default function DiffTool() {
     clearDiff,
     flashSuccess,
     setErr,
-  } = useDiffTool();
+  } = useDiffTool(instanceId);
 
 
 

@@ -26,9 +26,9 @@ function useParsedJson(jsonInput) {
   return parsedData;
 }
 
-export function useJsonViewer() {
-  const [jsonInput, setJsonInput] = useLocalStorage('json-formatter-input', '');
-  const [activeTab, setActiveTab] = useLocalStorage('json-formatter-active-tab', TAB.TEXT);
+export function useJsonViewer(instanceId = 'default') {
+  const [jsonInput, setJsonInput] = useLocalStorage(`json-formatter-input-${instanceId}`, '');
+  const [activeTab, setActiveTab] = useLocalStorage(`json-formatter-active-tab-${instanceId}`, TAB.TEXT);
   const [status, setStatus] = useState(emptyStatus);
   const parsedData = useParsedJson(jsonInput);
 

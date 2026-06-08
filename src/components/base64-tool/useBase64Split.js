@@ -5,9 +5,9 @@ import { useLocalStorage } from '../../lib/useLocalStorage';
 
 const emptyStatus = { message: '', type: STATUS_TYPE.NONE };
 
-export function useBase64Split() {
-  const [plainText, setPlainText] = useLocalStorage('base64-tool-plain-text', '');
-  const [base64Text, setBase64Text] = useLocalStorage('base64-tool-base64-text', '');
+export function useBase64Split(instanceId = 'default') {
+  const [plainText, setPlainText] = useLocalStorage(`base64-tool-plain-text-${instanceId}`, '');
+  const [base64Text, setBase64Text] = useLocalStorage(`base64-tool-base64-text-${instanceId}`, '');
   const [status, setStatus] = useState(emptyStatus);
 
   const clearStatus = useCallback(() => setStatus(emptyStatus), []);

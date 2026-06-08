@@ -10,7 +10,7 @@ const editorShell =
 const actionBtn =
   'rounded border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-300';
 
-export default function Base64Tool() {
+export default function Base64Tool({ instanceId }) {
   const {
     plainText,
     base64Text,
@@ -23,7 +23,7 @@ export default function Base64Tool() {
     handleCopyBase64,
     handleClearPlain,
     handleClearBase64,
-  } = useBase64Split();
+  } = useBase64Split(instanceId);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950 text-zinc-300 antialiased">
