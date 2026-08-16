@@ -9,14 +9,14 @@ import './App.css';
 
 function App() {
   const [activeTool, setActiveTool] = useState('json');
-  
+
   const [tabsMap, setTabsMap] = useLocalStorage('app-tool-tabs', {
     json: [{ id: '1' }],
     base64: [{ id: '1' }],
     jwt: [{ id: '1' }],
     diff: [{ id: '1' }],
   });
-  
+
   const [activeTabIds, setActiveTabIds] = useLocalStorage('app-tool-active-tabs', {
     json: '1',
     base64: '1',
@@ -27,10 +27,8 @@ function App() {
   const handleAddTab = () => {
     setTabsMap((prev) => {
       const toolTabs = prev[activeTool] || [];
-      if (toolTabs.length >= 20) return prev;
-      
       const newId = String(Math.max(0, ...toolTabs.map(t => parseInt(t.id, 10) || 0)) + 1);
-      
+
       setActiveTabIds((p) => ({ ...p, [activeTool]: newId }));
       return { ...prev, [activeTool]: [...toolTabs, { id: newId }] };
     });
@@ -40,7 +38,7 @@ function App() {
     setTabsMap((prev) => {
       const toolTabs = prev[activeTool] || [];
       const newTabs = toolTabs.filter(t => t.id !== tabId);
-      
+
       let updatedTabs = newTabs;
       let nextActiveId = tabId;
 
@@ -69,9 +67,9 @@ function App() {
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-x-hidden">
-      <AppNavbar 
-        activeTool={activeTool} 
-        onToolChange={setActiveTool} 
+      <AppNavbar
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
         activeToolTabs={currentTabs}
         activeTabId={currentTabId}
         onTabSelect={handleSelectTab}
