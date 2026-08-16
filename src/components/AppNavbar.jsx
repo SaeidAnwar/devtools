@@ -41,7 +41,7 @@ export default function AppNavbar({
       </nav>
 
       {activeToolTabs && (
-        <div className="-my-2 ml-1 flex flex-1 items-center gap-1 border-l border-zinc-800/90 py-2 pl-3">
+        <div className="ml-1 flex flex-1 flex-wrap items-center gap-1 border-l border-zinc-800/90 pl-3">
             {activeToolTabs.map((tab) => {
               const isActive = tab.id === activeTabId;
               return (
